@@ -22,8 +22,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install gtts moviepy
-          pip install imageio[ffmpeg]  # Instala las dependencias necesarias para moviepy
+          pip install gtts
+          pip install moviepy
+          pip install imageio[ffmpeg]  # Instalar las dependencias necesarias para moviepy
+          pip install numpy  # moviepy también depende de numpy
 
       - name: Check if background image exists
         run: |
@@ -47,3 +49,4 @@ jobs:
         with:
           name: video-generado
           path: output.mp4
+
