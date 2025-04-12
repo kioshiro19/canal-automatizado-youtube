@@ -19,15 +19,20 @@ jobs:
       - name: Crear entorno virtual de Python
         run: python -m venv venv  # Crea un entorno virtual
 
-      - name: Activar entorno virtual y instalar dependencias
+      - name: Activar entorno virtual y verificar Python
         run: |
           source venv/bin/activate  # Activa el entorno virtual
-          pip install --upgrade pip  # Actualiza pip
+          python --version  # Verifica la versión de Python para asegurarse de que el entorno esté activo
+
+      - name: Instalar dependencias
+        run: |
+          source venv/bin/activate  # Activa el entorno virtual
+          pip install --upgrade pip  # Asegúrate de que pip esté actualizado
           pip install --no-cache-dir gTTS moviepy  # Instala las librerías necesarias sin usar caché
 
       - name: Verificar instalación de dependencias
         run: |
-          source venv/bin/activate
+          source venv/bin/activate  # Activa el entorno virtual
           pip show gTTS moviepy  # Verifica que gTTS y moviepy están instalados
 
       - name: Ejecutar el script Python
