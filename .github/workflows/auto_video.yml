@@ -16,13 +16,24 @@ jobs:
         with:
           python-version: '3.10'  # Usa la versión de Python 3.10
 
-      - name: Instalar dependencias
+      - name: Crear entorno virtual de Python
+        run: python -m venv venv  # Crea un entorno virtual
+
+      - name: Activar entorno virtual y instalar dependencias
         run: |
-          python -m pip install --upgrade pip  # Actualiza pip
+          source venv/bin/activate  # Activa el entorno virtual
+          pip install --upgrade pip  # Actualiza pip
           pip install --no-cache-dir gTTS moviepy  # Instala las librerías necesarias sin usar caché
 
+      - name: Verificar instalación de dependencias
+        run: |
+          source venv/bin/activate
+          pip show gTTS moviepy  # Verifica que gTTS y moviepy están instalados
+
       - name: Ejecutar el script Python
-        run: python main.py  # Ejecuta el script Python
+        run: |
+          source venv/bin/activate  # Activa el entorno virtual
+          python main.py  # Ejecuta el script Python
 
       - name: Subir el video generado como artefacto
         uses: softprops/action-gh-release@v1  # Usamos esta acción para subir el video a GitHub Releases
@@ -30,6 +41,7 @@ jobs:
           files: output.mp4  # Especificamos el archivo que queremos subir
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token de GitHub para autenticación
+
 
 
 
