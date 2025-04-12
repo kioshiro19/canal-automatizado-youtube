@@ -19,21 +19,21 @@ jobs:
       - name: Crear entorno virtual de Python
         run: python -m venv venv  # Crea un entorno virtual
 
-      - name: Activar entorno virtual y verificar Python
+      - name: Activar entorno virtual y actualizar pip
         run: |
           source venv/bin/activate  # Activa el entorno virtual
-          python --version  # Verifica la versión de Python para asegurarse de que el entorno esté activo
+          pip install --upgrade pip  # Actualiza pip
 
       - name: Instalar dependencias
         run: |
           source venv/bin/activate  # Activa el entorno virtual
-          pip install --upgrade pip  # Asegúrate de que pip esté actualizado
           pip install --no-cache-dir gTTS moviepy  # Instala las librerías necesarias sin usar caché
 
-      - name: Verificar instalación de dependencias
+      - name: Verificar instalación de moviepy y gTTS
         run: |
-          source venv/bin/activate  # Activa el entorno virtual
-          pip show gTTS moviepy  # Verifica que gTTS y moviepy están instalados
+          source venv/bin/activate
+          pip show moviepy gTTS  # Verifica que las librerías están instaladas correctamente
+          pip list  # Muestra todas las librerías instaladas
 
       - name: Ejecutar el script Python
         run: |
@@ -46,7 +46,4 @@ jobs:
           files: output.mp4  # Especificamos el archivo que queremos subir
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token de GitHub para autenticación
-
-
-
 
