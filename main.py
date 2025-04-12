@@ -1,26 +1,30 @@
-from moviepy.editor import *
 from gtts import gTTS
+from PIL import Image, ImageDraw, ImageFont
+import subprocess
+import os
 
-# El texto para el TTS (text-to-speech)
+# 1. Generar el audio con gTTS
 text = "Hola, este es un video de prueba generado automáticamente."
-
-# Genera el audio usando gTTS
 tts = gTTS(text, lang='es')
-tts.save("audio.mp3")
+audio_filename = "audio.mp3"
+tts.save(audio_filename)
 
-# Crea un fondo de color negro para el video
-clip = ColorClip(size=(1280, 720), color=(0, 0, 0), duration=20)
+# 2. Crear la imagen con texto usando Pillow
+img = Image.new('RGB', (1280, 720), color=(0, 0, 0))
+d = ImageDraw.Draw(img)
+font = ImageFont.load_default()  # Usa una fuente por defecto
+d.text((10, 10), text, fill=(255, 255, 255), font=font)
 
-# Crea un clip con el texto que aparece en el video
-txt_clip = TextClip(text, fontsize=50, color='white')
-txt_clip = txt_clip.set_position('center').set_duration(20)
+# Guardar la imagen
+image_filename = "image.png"
+img.save(image_filename)
 
-# Agrega el audio al video
-audio_background = AudioFileClip("audio.mp3")
+# 3. Crear el video combinando la imagen y el audio usando FFmpeg
+video_filename = "output.mp4"
+subprocess.run(['ffmpeg', '-loop', '1', '-framerate', '1', '-t', '20', '-i', image_filename, '-i', audio_filename, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video_filename])
 
-# Combina los clips de video y audio
-final_clip = CompositeVideoClip([clip, txt_clip])
-final_clip = final_clip.set_audio(audio_background)
+# Limpiar archivos temporales
+os.remove(audio_filename)
+os.remove(image_filename)
 
-# Guarda el video final
-final_clip.write_videofile("output.mp4", fps=24)
+print(f"Video generado: {video_filename}")
