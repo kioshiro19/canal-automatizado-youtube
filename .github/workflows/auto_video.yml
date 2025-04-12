@@ -31,9 +31,9 @@ jobs:
 
       - name: Verificar instalación de moviepy y gTTS
         run: |
-          source venv/bin/activate
+          source venv/bin/activate  # Activa el entorno virtual
           pip show moviepy gTTS  # Verifica que las librerías están instaladas correctamente
-          pip list  # Muestra todas las librerías instaladas
+          pip list  # Muestra todas las librerías instaladas para verificar
 
       - name: Ejecutar el script Python
         run: |
@@ -46,4 +46,5 @@ jobs:
           files: output.mp4  # Especificamos el archivo que queremos subir
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Usa el token de GitHub para autenticación
+
 
