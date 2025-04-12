@@ -1,39 +1,16 @@
-import os
 from gtts import gTTS
+from moviepy.editor import *
 import subprocess
 
-# 1. Generar guion con g4f
-import g4f
+# Datos para el video (ajustalos a tu caso)
+image_filename = 'fondo.jpg'
+audio_filename = 'audio.mp3'  # Asegúrate de tener este archivo de audio disponible
+video_filename = 'output.mp4'
 
-respuesta = g4f.ChatCompletion.create(
-    model=g4f.models.gpt_4,
-    messages=[{
-        "role": "user",
-        "content": "Escribe un guion de 20 minutos sobre cómo un padre primerizo puede manejar el estrés, con base científica y recomendaciones psicológicas."
-    }]
-)
+# Crear el audio con voz en off (ejemplo)
+tts = gTTS("Bienvenidos a este video de ayuda para padres primerizos", lang='es')
+tts.save(audio_filename)
 
-guion = respuesta
-with open("guion.txt", "w", encoding="utf-8") as f:
-    f.write(guion)
-
-# 2. Crear voz en off
-tts = gTTS(text=guion, lang='es')
-tts.save("voz.mp3")
-
-# 3. Crear subtítulos básicos
-lines = guion.split(". ")
-with open("subtitulos.srt", "w", encoding="utf-8") as srt:
-    for i, line in enumerate(lines):
-        start = f"00:{i//6:02d}:{(i%6)*10:02d},000"
-        end = f"00:{i//6:02d}:{(i%6)*10+9:02d},000"
-        srt.write(f"{i+1}\n{start} --> {end}\n{line.strip()}.\n\n")
-
-# 4. Generar video con ffmpeg
-subprocess.run([
-    "ffmpeg", "-loop", "1", "-i", "fondo.jpg",
-    "-i", "voz.mp3", "-vf", "subtitles=subtitulos.srt",
-    "-t", "1200", "-c:v", "libx264", "-c:a", "aac",
-    "-shortest", "output.mp4"
-])
+# Crear el video con la imagen de fondo y la voz en off
+subprocess.run(['ffmpeg', '-loop', '1', '-framerate', '1', '-t', '20', '-i', image_filename, '-i', audio_filename, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video_filename])
 
