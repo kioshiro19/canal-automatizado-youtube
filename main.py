@@ -1,16 +1,27 @@
-from gtts import gTTS
-from moviepy.editor import *
 import subprocess
+from gtts import gTTS
+import os
 
-# Datos para el video (ajustalos a tu caso)
-image_filename = 'fondo.jpg'
-audio_filename = 'audio.mp3'  # Asegúrate de tener este archivo de audio disponible
-video_filename = 'output.mp4'
+# Paso 1: Generar la voz en off
+texto = "Bienvenidos a este canal de apoyo para padres primerizos. Hoy hablaremos sobre cómo manejar el estrés en los primeros meses de paternidad."
 
-# Crear el audio con voz en off (ejemplo)
-tts = gTTS("Bienvenidos a este video de ayuda para padres primerizos", lang='es')
+# Crear el archivo de audio con la voz generada
+tts = gTTS(texto, lang='es')
+audio_filename = "audio.mp3"
 tts.save(audio_filename)
 
-# Crear el video con la imagen de fondo y la voz en off
-subprocess.run(['ffmpeg', '-loop', '1', '-framerate', '1', '-t', '20', '-i', image_filename, '-i', audio_filename, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video_filename])
+# Paso 2: Crear el video usando ffmpeg
+image_filename = "fondo.jpg"  # Imagen de fondo
+video_filename = "output.mp4"  # Nombre del archivo de salida
 
+# Comando para crear el video con la voz en off
+subprocess.run([
+    'ffmpeg', '-loop', '1', '-framerate', '1', '-t', '20', '-i', image_filename,
+    '-i', audio_filename, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video_filename
+])
+
+# Verificar si el video fue generado correctamente
+if os.path.exists(video_filename):
+    print(f"Video generado correctamente: {video_filename}")
+else:
+    print("Error: No se pudo generar el video.")
