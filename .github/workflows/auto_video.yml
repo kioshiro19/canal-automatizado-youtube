@@ -16,17 +16,11 @@ jobs:
         with:
           python-version: '3.10'  # Usa la versión de Python 3.10
 
-      - name: Crear entorno virtual de Python
-        run: python -m venv venv  # Crea un entorno virtual
-
-      - name: Activar entorno virtual y actualizar pip
+      - name: Crear entorno virtual y activar
         run: |
+          python -m venv venv  # Crea el entorno virtual
           source venv/bin/activate  # Activa el entorno virtual
           pip install --upgrade pip  # Actualiza pip
-
-      - name: Instalar dependencias
-        run: |
-          source venv/bin/activate  # Activa el entorno virtual
           pip install --no-cache-dir gTTS moviepy  # Instala las librerías necesarias sin usar caché
 
       - name: Verificar instalación de moviepy y gTTS
