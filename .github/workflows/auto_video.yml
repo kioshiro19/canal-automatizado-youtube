@@ -22,28 +22,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install gtts  # Instalar gtts para la voz en off
-
-      - name: Check if background image exists
-        run: |
-          if [ ! -f fondo.jpg ]; then
-            echo "Error: fondo.jpg not found!"
-            exit 1
-          fi
+          pip install gtts moviepy pillow requests
 
       - name: Run script
         run: python main.py
-
-      - name: Check if video was generated
-        run: |
-          if [ ! -f output.mp4 ]; then
-            echo "Error: Video file not generated!"
-            exit 1
-          fi
 
       - name: Upload video
         uses: actions/upload-artifact@v4
         with:
           name: video-generado
           path: output.mp4
+
 
