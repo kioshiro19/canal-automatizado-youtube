@@ -29,9 +29,8 @@ jobs:
         python main.py
 
     - name: Upload video as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2  # Aquí cambiamos a v2
       with:
         name: video-salida
         path: video_salida.mp4
-
 
