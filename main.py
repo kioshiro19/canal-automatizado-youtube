@@ -1,55 +1,37 @@
-import subprocess
 import requests
-from gtts import gTTS
 from PIL import Image
 from io import BytesIO
+from gtts import gTTS
+import moviepy.editor as mp
 
-# Texto generado por IA
-texto = "¿Sabías que los bebés reconocen la voz de su madre desde el útero?"
+# Texto del video
+texto = "Ser padre primerizo puede ser abrumador. Pero con amor, paciencia y guía, todo es posible."
 
-# 1. Generar voz
-tts = gTTS(texto, lang='es')
-audio_filename = "audio.mp3"
-tts.save(audio_filename)
-
-# 2. Obtener duración del audio
-result = subprocess.run(
-    ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-     "-of", "default=noprint_wrappers=1:nokey=1", audio_filename],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT
-)
-duration = float(result.stdout)
-
-# 3. Crear subtítulos
-subtitles = f"""1
-00:00:00,000 --> 00:00:05,000
-{texto}
-"""
-with open("subtitulos.srt", "w", encoding="utf-8") as f:
-    f.write(subtitles)
-
-# 4. Buscar imagen relacionada usando Lexica.art
-busqueda = texto.split("que")[-1].strip()  # Ej: "los bebés reconocen la voz de su madre desde el útero"
-query = busqueda.replace(" ", "%20")
-response = requests.get(f"https://lexica.art/api/v1/search?q={query}")
-
-data = response.json()
-if data['images']:
-    image_url = data['images'][0]['src']
+# Descargar imagen desde Unsplash automáticamente
+tema = "padres primerizos"
+url = f"https://source.unsplash.com/1600x900/?{tema.replace(' ', '%20')}"
+response = requests.get(url)
+if response.status_code == 200:
+    img = Image.open(BytesIO(response.content))
+    img.save("fondo.jpg")
+    print("✅ Imagen descargada.")
 else:
-    image_url = "https://via.placeholder.com/1280x720.png?text=No+imagen+encontrada"
+    print("❌ No se pudo descargar la imagen.")
+    exit()
 
-# 5. Descargar y guardar imagen
-img_data = requests.get(image_url).content
-with open('fondo.jpg', 'wb') as handler:
-    handler.write(img_data)
+# Generar voz en off
+tts = gTTS(text=texto, lang='es')
+tts.save("voz.mp3")
 
-# 6. Ensamblar video
-video_filename = "output.mp4"
-subprocess.run([
-    'ffmpeg', '-loop', '1', '-framerate', '1', '-t', str(duration), '-i', 'fondo.jpg',
-    '-i', audio_filename, '-vf',
-    "subtitles=subtitulos.srt:force_style='FontSize=26,OutlineColour=&H80000000&,BorderStyle=1,Outline=2'",
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', video_filename
-])
+# Crear video
+clip = mp.ImageClip("fondo.jpg", duration=15)
+audio = mp.AudioFileClip("voz.mp3")
+clip = clip.set_audio(audio)
+
+# Agregar subtítulos
+txt_clip = mp.TextClip(texto, fontsize=24, color='white', bg_color='black', size=clip.size)
+txt_clip = txt_clip.set_duration(clip.duration).set_position(('center', 'bottom'))
+
+# Composición final
+final = mp.CompositeVideoClip([clip, txt_clip])
+final.write_videofile("output.mp4", fps=24)
