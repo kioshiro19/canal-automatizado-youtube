@@ -1,43 +1,37 @@
-name: Crear Video Automático
+name: Python script execution
 
 on:
-  workflow_dispatch:
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  create_video:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest  # Utiliza Ubuntu como entorno
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
+    # Paso 1: Obtener el código
+    - name: Check out code
+      uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+    # Paso 2: Configurar Python
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'  # Usa la versión de Python que prefieras
 
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+    # Paso 3: Instalar dependencias
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # Instala las dependencias definidas en requirements.txt
 
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+    # Paso 4: Ejecutar el script de Python
+    - name: Run main.py
+      run: |
+        python main.py  # Ejecuta tu script
 
-      - name: Install dependencies
-        run: |
-          pip install moviepy gtts requests
-          sudo apt-get install -y libsndfile1 # Dependencia para moviepy
-
-      - name: Verify moviepy installation
-        run: |
-          pip freeze | grep moviepy
-          python -c "from moviepy.editor import *"
-
-      - name: Run main script
-        run: python main.py
-
-      - name: Upload video
-        uses: actions/upload-artifact@v4
-        with:
-          name: video-generado
-          path: video_generado.mp4
 
