@@ -1,51 +1,75 @@
-import os
 import requests
-from gtts import gTTS
-from PIL import Image
+import os
 from moviepy.editor import *
-from io import BytesIO
+from gtts import gTTS
 
-# Texto base (puede venir de IA luego)
-texto = """
-Los primeros días como padres pueden ser abrumadores. 
-Es normal sentir miedo, ansiedad o inseguridad.
-La ciencia demuestra que el contacto piel con piel ayuda al apego seguro.
-"""
-lineas = [line.strip() for line in texto.strip().split('\n') if line.strip()]
+# Tu API Key de Pixabay (reemplázala con tu propia clave)
+API_KEY = 'tu_api_key_pixabay'
 
-# Crear voz en off
-tts = gTTS(text=texto, lang='es')
-tts.save("audio.mp3")
+# Definir la función para obtener imágenes desde la API de Pixabay
+def obtener_imagenes(query, cantidad=5):
+    url = f"https://pixabay.com/api/?key={API_KEY}&q={query}&image_type=photo&per_page={cantidad}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if data['totalHits'] > 0:
+            imagenes = data['hits']
+            urls = [imagen['webformatURL'] for imagen in imagenes]
+            return urls
+        else:
+            print(f"No se encontraron imágenes para: {query}")
+            return []
+    else:
+        print(f"Error en la solicitud: {response.status_code}")
+        return []
 
-# Descargar imágenes automáticamente desde Unsplash
-def buscar_imagen(query, i):
-    headers = {"Accept-Version": "v1"}
-    params = {"query": query, "client_id": "TU_API_KEY_UNSPLASH", "orientation": "landscape"}
-    response = requests.get("https://api.unsplash.com/photos/random", headers=headers, params=params)
-    data = response.json()
-    url_imagen = data["urls"]["regular"]
-    img_data = requests.get(url_imagen).content
-    with open(f"img{i}.jpg", "wb") as handler:
-        handler.write(img_data)
-    return f"img{i}.jpg"
+# Descargar las imágenes
+def descargar_imagenes(urls, carpeta_destino="imagenes"):
+    if not os.path.exists(carpeta_destino):
+        os.makedirs(carpeta_destino)
+    
+    for i, url in enumerate(urls):
+        img_data = requests.get(url).content
+        with open(f"{carpeta_destino}/imagen_{i+1}.jpg", 'wb') as f:
+            f.write(img_data)
+        print(f"Imagen {i+1} descargada.")
 
-imagenes = []
-for idx, linea in enumerate(lineas):
-    imagen_path = buscar_imagen(linea, idx)
-    imagenes.append(imagen_path)
+# Generar el audio con GTTS (Google Text-to-Speech)
+def generar_audio(texto, archivo_audio="audio.mp3"):
+    tts = gTTS(texto, lang='es')
+    tts.save(archivo_audio)
+    print(f"Audio guardado como {archivo_audio}")
 
-# Crear clips con subtítulos e imágenes
-clips = []
-duracion_por_linea = 5  # segundos por línea
-for i, (linea, imagen_path) in enumerate(zip(lineas, imagenes)):
-    img_clip = ImageClip(imagen_path).set_duration(duracion_por_linea).resize(height=720)
-    txt_clip = TextClip(linea, fontsize=40, color='white', bg_color='black', method='caption', size=(img_clip.w, None))
-    txt_clip = txt_clip.set_duration(duracion_por_linea).set_position(('center', 'bottom'))
-    clip_final = CompositeVideoClip([img_clip, txt_clip])
-    clips.append(clip_final)
+# Crear video con las imágenes y el audio
+def crear_video(imagenes, audio_file="audio.mp3", output_file="video_generado.mp4"):
+    clips = [ImageClip(imagen).set_duration(5) for imagen in imagenes]  # Duración de 5 segundos por imagen
+    video = concatenate_videoclips(clips, method="compose")
 
-video_final = concatenate_videoclips(clips)
-audio_final = AudioFileClip("audio.mp3")
-video_final = video_final.set_audio(audio_final)
-video_final.write_videofile("output.mp4", fps=24)
+    # Añadir el audio al video
+    audio = AudioFileClip(audio_file)
+    video = video.set_audio(audio)
+
+    # Exportar el video
+    video.write_videofile(output_file, fps=24)
+    print(f"Video generado: {output_file}")
+
+# Proceso principal
+def crear_video_automático(query="parenting", cantidad_imagenes=5, texto_audio="Consejos para padres primerizos."):
+    # Obtener las imágenes relacionadas con el tema
+    imagenes_urls = obtener_imagenes(query, cantidad_imagenes)
+    
+    if imagenes_urls:
+        # Descargar las imágenes
+        descargar_imagenes(imagenes_urls)
+
+        # Generar el audio con el texto proporcionado
+        generar_audio(texto_audio)
+
+        # Crear el video con las imágenes y el audio
+        imagenes = [f"imagenes/imagen_{i+1}.jpg" for i in range(cantidad_imagenes)]
+        crear_video(imagenes)
+
+# Ejecutar el proceso
+crear_video_automático(query="parenting", cantidad_imagenes=5, texto_audio="Consejos para padres primerizos. ¡Bienvenidos al canal!")
 
