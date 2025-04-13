@@ -4,7 +4,7 @@ from moviepy.editor import *
 from gtts import gTTS
 
 # Tu API Key de Pixabay (reemplázala con tu propia clave)
-API_KEY = 'tu_api_key_pixabay'
+API_KEY = '49719716-beada3e685dff6ab05b54cac6'
 
 # Definir la función para obtener imágenes desde la API de Pixabay
 def obtener_imagenes(query, cantidad=5):
