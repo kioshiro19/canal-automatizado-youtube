@@ -16,10 +16,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install FFmpeg and dependencies
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
           python -m pip install --upgrade pip
           pip install moviepy gtts requests
 
@@ -31,5 +32,4 @@ jobs:
         with:
           name: video-generado
           path: video_generado.mp4
-
 
