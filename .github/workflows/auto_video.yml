@@ -11,25 +11,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout del código
-      uses: actions/checkout@v2
+      - name: Checkout del código
+        uses: actions/checkout@v2
 
-    - name: Configurar Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
+      - name: Configurar Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
 
-    - name: Instalar dependencias
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests Pillow
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests Pillow
 
-    - name: Ejecutar script
-      run: python main.py
+      - name: Ejecutar script
+        run: python main.py
 
-    - name: Subir video generado
-      uses: actions/upload-artifact@v3
-      with:
-        name: video-salida
-        path: video_salida.mp4
-
+      - name: Subir video generado
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: video-salida
+          path: video_salida.mp4
