@@ -6,7 +6,7 @@ import random
 # Función para obtener imágenes desde Pixabay
 def obtener_imagenes():
     url = "https://pixabay.com/api/"
-    api_key = "TU_API_KEY"  # Reemplaza con tu clave de API de Pixabay
+    api_key = "49719716-beada3e685dff6ab05b54cac6"  # Reemplaza con tu clave de API de Pixabay
     parametros = {
         "key": api_key,
         "q": "motivation",
