@@ -24,7 +24,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install moviepy gtts requests
+          pip install --force-reinstall moviepy gtts requests
+          sudo apt-get install -y libsndfile1 # Dependencia para moviepy
 
       - name: Verify moviepy installation
         run: |
