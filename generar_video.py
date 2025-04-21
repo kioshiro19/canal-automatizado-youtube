@@ -3,6 +3,8 @@ import subprocess
 import requests
 import json
 from gtts import gTTS
+import speech_recognition as sr
+import pysrt
 
 # Crear directorio temporal
 os.makedirs("media", exist_ok=True)
@@ -24,12 +26,17 @@ def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("HF_TOKEN")
         if response.status_code == 200:
             guion = response.json()[0]["generated_text"].strip()
             print(f"Guión generado: {guion[:50]}...")
+            with open("media/guion.txt", "w") as f:
+                f.write(guion)
             return guion
         else:
             raise Exception(f"API error: {response.text}")
     except Exception as e:
         print(f"Error en guión: {e}")
-        return "Este es un video sobre la naturaleza. Los bosques son hogar de miles de especies. Los ríos fluyen con vida. Cada día, la naturaleza nos enseña algo nuevo."
+        guion = "Este es un video sobre la naturaleza. Los bosques son hogar de miles de especies. Los ríos fluyen con vida. Cada día, la naturaleza nos enseña algo nuevo."
+        with open("media/guion.txt", "w") as f:
+            f.write(guion)
+        return guion
 
 # Paso 2: Crear voz en off con gTTS
 def texto_a_voz(guion, archivo_salida="media/voz.wav"):
@@ -52,10 +59,11 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
     except Exception as e:
         print(f"Error en voz: {e}")
         # Fallback: Silencio
-        subprocess.run(
+        result = subprocess.run(
             ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo_salida],
             capture_output=True, text=True
         )
+        print(f"FFmpeg voz fallback output: {result.stderr}")
         return archivo_salida
 
 # Paso 3: Descargar imágenes (Unsplash Source)
@@ -73,16 +81,17 @@ def descargar_imagenes(tema="nature", cantidad=3):
                 if not os.path.exists(archivo):
                     raise Exception(f"Imagen {i} no guardada")
                 imagenes.append(archivo)
-                print(f"Imagen {i} descargada.")
+                print(f"Imagen {i} descargada: {archivo}")
             else:
-                raise Exception("Error al descargar")
+                raise Exception(f"Error al descargar, status: {respuesta.status_code}")
         except Exception as e:
             print(f"Error en imagen {i}: {e}")
             # Fallback: Imagen negra
-            subprocess.run(
+            result = subprocess.run(
                 ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=20", "-c:v", "libx264", archivo],
                 capture_output=True, text=True
             )
+            print(f"FFmpeg imagen fallback output: {result.stderr}")
             imagenes.append(archivo)
     return imagenes
 
@@ -98,22 +107,56 @@ def obtener_musica():
                 f.write(respuesta.content)
             if not os.path.exists(archivo):
                 raise Exception("Música no guardada")
-            print("Música descargada.")
+            print("Música descargada: {archivo}")
             return archivo
         else:
-            raise Exception("Error al descargar música")
+            raise Exception(f"Error al descargar música, status: {respuesta.status_code}")
     except Exception as e:
         print(f"Error en música: {e}")
         # Fallback: Silencio
-        subprocess.run(
+        result = subprocess.run(
             ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo],
             capture_output=True, text=True
         )
+        print(f"FFmpeg música fallback output: {result.stderr}")
         return archivo
 
-# Paso 5: Crear video
-def crear_video(imagenes, voz, musica, salida="media/video_final.mp4"):
-    print("Paso 5: Creando video...")
+# Paso 5: Generar subtítulos con Whisper
+def generar_subtitulos(audio, salida="media/subtitulos.srt"):
+    print("Paso 5: Generando subtítulos...")
+    try:
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audio) as source:
+            audio_data = recognizer.record(source)
+            texto = recognizer.recognize_whisper(audio_data, model="tiny")
+        
+        # Subtítulos simplificados
+        palabras = texto.split()
+        subtitulos = []
+        for i in range(0, len(palabras), 5):
+            start = i * 0.5
+            end = min((i + 5) * 0.5, 60)
+            subtitulos.append(pysrt.SubRipItem(
+                index=len(subtitulos) + 1,
+                start=pysrt.SubRipTime(seconds=start),
+                end=pysrt.SubRipTime(seconds=end),
+                text=" ".join(palabras[i:i+5])
+            ))
+        pysrt.SubRipFile(subtitulos).save(salida)
+        if not os.path.exists(salida):
+            raise Exception("Subtítulos no generados")
+        print("Subtítulos generados: {salida}")
+        return salida
+    except Exception as e:
+        print(f"Error en subtítulos: {e}")
+        # Fallback: Subtítulos vacíos
+        with open(salida, "w") as f:
+            f.write("1\n00:00:00,000 --> 00:01:00,000\nSin subtítulos disponibles\n")
+        return salida
+
+# Paso 6: Crear video
+def crear_video(imagenes, voz, musica, subtitulos, salida="media/video_final.mp4"):
+    print("Paso 6: Creando video...")
     try:
         # Verificar que los archivos de entrada existan
         for img in imagenes:
@@ -123,6 +166,8 @@ def crear_video(imagenes, voz, musica, salida="media/video_final.mp4"):
             raise Exception("Archivo de voz no encontrado")
         if not os.path.exists(musica):
             raise Exception("Archivo de música no encontrado")
+        if not os.path.exists(subtitulos):
+            raise Exception("Archivo de subtítulos no encontrado")
 
         # Crear archivo de entrada para imágenes
         with open("media/imagenes.txt", "w") as f:
@@ -130,11 +175,12 @@ def crear_video(imagenes, voz, musica, salida="media/video_final.mp4"):
                 f.write(f"file '{img}'\n")
                 f.write("duration 20\n")  # 20 segundos por imagen
 
-        # Combinar imágenes, voz y música
+        # Combinar imágenes, voz, música y subtítulos
         comando = [
             "ffmpeg", "-y", "-f", "concat", "-safe", "0",
             "-i", "media/imagenes.txt",
             "-i", voz, "-i", musica,
+            "-vf", f"subtitles={subtitulos}",
             "-c:v", "libx264", "-c:a", "aac",
             "-shortest", "-pix_fmt", "yuv420p",
             salida
@@ -148,10 +194,11 @@ def crear_video(imagenes, voz, musica, salida="media/video_final.mp4"):
     except Exception as e:
         print(f"Error en creación de video: {e}")
         # Fallback: Video mínimo
-        subprocess.run(
+        result = subprocess.run(
             ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=60", "-c:v", "libx264", salida],
             capture_output=True, text=True
         )
+        print(f"FFmpeg video fallback output: {result.stderr}")
         return salida
 
 # Flujo principal
@@ -162,7 +209,8 @@ def main():
         voz = texto_a_voz(guion)
         imagenes = descargar_imagenes(tema)
         musica = obtener_musica()
-        video_final = crear_video(imagenes, voz, musica)
+        subtitulos = generar_subtitulos(voz)
+        video_final = crear_video(imagenes, voz, musica, subtitulos)
         print(f"Proceso completado: {video_final}")
     except Exception as e:
         print(f"Error en flujo principal: {e}")
