@@ -10,7 +10,7 @@ import pysrt
 os.makedirs("media", exist_ok=True)
 
 # Paso 1: Generar guión con Hugging Face Inference API
-def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("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")):
+def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("sk-9faea39633094b6295cc9682482afb1f")):
     print("Paso 1: Generando guión...")
     try:
         if not hf_token:
@@ -28,14 +28,16 @@ def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("hf_IfMfJrP
             print(f"Guión generado: {guion[:50]}...")
             with open("media/guion.txt", "w") as f:
                 f.write(guion)
+            print(f"Guión guardado: media/guion.txt, tamaño: {os.path.getsize('media/guion.txt')} bytes")
             return guion
         else:
-            raise Exception(f"API error: {response.text}")
+            raise Exception(f"API error: {response.status_code} - {response.text}")
     except Exception as e:
         print(f"Error en guión: {e}")
         guion = "Este es un video sobre la naturaleza. Los bosques son hogar de miles de especies. Los ríos fluyen con vida. Cada día, la naturaleza nos enseña algo nuevo."
         with open("media/guion.txt", "w") as f:
             f.write(guion)
+        print(f"Guión fallback guardado: media/guion.txt, tamaño: {os.path.getsize('media/guion.txt')} bytes")
         return guion
 
 # Paso 2: Crear voz en off con gTTS
@@ -47,6 +49,7 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
         tts.save(temp_mp3)
         if not os.path.exists(temp_mp3):
             raise Exception("No se generó el archivo MP3")
+        print(f"MP3 generado: {temp_mp3}, tamaño: {os.path.getsize(temp_mp3)} bytes")
         result = subprocess.run(
             ["ffmpeg", "-y", "-i", temp_mp3, archivo_salida],
             check=True, capture_output=True, text=True
@@ -54,7 +57,7 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
         print(f"FFmpeg voz output: {result.stderr}")
         if not os.path.exists(archivo_salida):
             raise Exception("No se generó el archivo WAV")
-        print(f"Voz generada: {archivo_salida}")
+        print(f"Voz generada: {archivo_salida}, tamaño: {os.path.getsize(archivo_salida)} bytes")
         return archivo_salida
     except Exception as e:
         print(f"Error en voz: {e}")
@@ -64,6 +67,7 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
             capture_output=True, text=True
         )
         print(f"FFmpeg voz fallback output: {result.stderr}")
+        print(f"Voz fallback generada: {archivo_salida}, tamaño: {os.path.getsize(archivo_salida)} bytes")
         return archivo_salida
 
 # Paso 3: Descargar una imagen (Unsplash Source)
@@ -73,12 +77,13 @@ def descargar_imagen(tema="nature"):
     archivo = "media/imagen.jpg"
     try:
         respuesta = requests.get(url, stream=True, timeout=10)
+        print(f"Unsplash status code: {respuesta.status_code}")
         if respuesta.status_code == 200:
             with open(archivo, "wb") as f:
                 f.write(respuesta.content)
             if not os.path.exists(archivo):
                 raise Exception("Imagen no guardada")
-            print(f"Imagen descargada: {archivo}")
+            print(f"Imagen descargada: {archivo}, tamaño: {os.path.getsize(archivo)} bytes")
             return archivo
         else:
             raise Exception(f"Error al descargar, status: {respuesta.status_code}")
@@ -90,6 +95,7 @@ def descargar_imagen(tema="nature"):
             capture_output=True, text=True
         )
         print(f"FFmpeg imagen fallback output: {result.stderr}")
+        print(f"Imagen fallback generada: {archivo}, tamaño: {os.path.getsize(archivo)} bytes")
         return archivo
 
 # Paso 4: Obtener música
@@ -99,12 +105,13 @@ def obtener_musica():
     archivo = "media/musica.mp3"
     try:
         respuesta = requests.get(url, stream=True, timeout=10)
+        print(f"Pixabay status code: {respuesta.status_code}")
         if respuesta.status_code == 200:
             with open(archivo, "wb") as f:
                 f.write(respuesta.content)
             if not os.path.exists(archivo):
                 raise Exception("Música no guardada")
-            print(f"Música descargada: {archivo}")
+            print(f"Música descargada: {archivo}, tamaño: {os.path.getsize(archivo)} bytes")
             return archivo
         else:
             raise Exception(f"Error al descargar música, status: {respuesta.status_code}")
@@ -116,6 +123,7 @@ def obtener_musica():
             capture_output=True, text=True
         )
         print(f"FFmpeg música fallback output: {result.stderr}")
+        print(f"Música fallback generada: {archivo}, tamaño: {os.path.getsize(archivo)} bytes")
         return archivo
 
 # Paso 5: Generar subtítulos con Whisper
@@ -141,13 +149,14 @@ def generar_subtitulos(audio, salida="media/subtitulos.srt"):
         pysrt.SubRipFile(subtitulos).save(salida)
         if not os.path.exists(salida):
             raise Exception("Subtítulos no generados")
-        print(f"Subtítulos generados: {salida}")
+        print(f"Subtítulos generados: {salida}, tamaño: {os.path.getsize(salida)} bytes")
         return salida
     except Exception as e:
         print(f"Error en subtítulos: {e}")
         # Fallback: Subtítulos vacíos
         with open(salida, "w") as f:
             f.write("1\n00:00:00,000 --> 00:01:00,000\nSin subtítulos disponibles\n")
+        print(f"Subtítulos fallback generados: {salida}, tamaño: {os.path.getsize(salida)} bytes")
         return salida
 
 # Paso 6: Crear video
@@ -164,7 +173,7 @@ def crear_video(imagen, voz, musica, subtitulos, salida="media/video_final.mp4")
         if not os.path.exists(subtitulos):
             raise Exception("Archivo de subtítulos no encontrado")
 
-        # Usar una imagen estática durante 60 segundos
+        # Crear video con una imagen estática, voz, música y subtítulos
         comando = [
             "ffmpeg", "-y", "-loop", "1", "-i", imagen, "-i", voz, "-i", musica,
             "-vf", f"subtitles={subtitulos},format=yuv420p",
@@ -175,7 +184,7 @@ def crear_video(imagen, voz, musica, subtitulos, salida="media/video_final.mp4")
         print(f"FFmpeg video output: {result.stderr}")
         if not os.path.exists(salida):
             raise Exception("Video final no generado")
-        print(f"Video final generado: {salida}")
+        print(f"Video final generado: {salida}, tamaño: {os.path.getsize(salida)} bytes")
         return salida
     except Exception as e:
         print(f"Error en creación de video: {e}")
@@ -185,6 +194,7 @@ def crear_video(imagen, voz, musica, subtitulos, salida="media/video_final.mp4")
             capture_output=True, text=True
         )
         print(f"FFmpeg video fallback output: {result.stderr}")
+        print(f"Video fallback generado: {salida}, tamaño: {os.path.getsize(salida)} bytes")
         return salida
 
 # Flujo principal
@@ -197,7 +207,7 @@ def main():
         musica = obtener_musica()
         subtitulos = generar_subtitulos(voz)
         video_final = crear_video(imagen, voz, musica, subtitulos)
-        print(f"Proceso completado: {video_final}")
+        print(f"Proceso completado: {video_final}, tamaño: {os.path.getsize(video_final)} bytes")
     except Exception as e:
         print(f"Error en flujo principal: {e}")
         raise
