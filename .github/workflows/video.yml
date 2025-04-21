@@ -1,15 +1,15 @@
 name: Generar Video de Prueba
 on:
-  workflow_dispatch:  # Ejecución manual
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: Configurar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
-          python-version: '3.11'  # Python 3.11 para compatibilidad con TTS
+          python-version: '3.11'
       - name: Instalar dependencias
         run: |
           sudo apt update
@@ -20,7 +20,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python generar_video.py
       - name: Subir artefacto
-        uses: actions/upload-artifact@v4  # Cambiado a v4
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: video-prueba
           path: media/video_final.mp4
