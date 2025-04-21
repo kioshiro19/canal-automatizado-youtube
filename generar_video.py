@@ -54,7 +54,7 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
         print(f"FFmpeg voz output: {result.stderr}")
         if not os.path.exists(archivo_salida):
             raise Exception("No se generó el archivo WAV")
-        print("Voz generada con éxito.")
+        print(f"Voz generada: {archivo_salida}")
         return archivo_salida
     except Exception as e:
         print(f"Error en voz: {e}")
@@ -66,34 +66,31 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
         print(f"FFmpeg voz fallback output: {result.stderr}")
         return archivo_salida
 
-# Paso 3: Descargar imágenes (Unsplash Source)
-def descargar_imagenes(tema="nature", cantidad=3):
-    print("Paso 3: Descargando imágenes...")
-    imagenes = []
-    for i in range(cantidad):
-        url = f"https://source.unsplash.com/1920x1080/?{tema}&sig={i}"
-        archivo = f"media/imagen_{i}.jpg"
-        try:
-            respuesta = requests.get(url, stream=True, timeout=10)
-            if respuesta.status_code == 200:
-                with open(archivo, "wb") as f:
-                    f.write(respuesta.content)
-                if not os.path.exists(archivo):
-                    raise Exception(f"Imagen {i} no guardada")
-                imagenes.append(archivo)
-                print(f"Imagen {i} descargada: {archivo}")
-            else:
-                raise Exception(f"Error al descargar, status: {respuesta.status_code}")
-        except Exception as e:
-            print(f"Error en imagen {i}: {e}")
-            # Fallback: Imagen negra
-            result = subprocess.run(
-                ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=20", "-c:v", "libx264", archivo],
-                capture_output=True, text=True
-            )
-            print(f"FFmpeg imagen fallback output: {result.stderr}")
-            imagenes.append(archivo)
-    return imagenes
+# Paso 3: Descargar una imagen (Unsplash Source)
+def descargar_imagen(tema="nature"):
+    print("Paso 3: Descargando una imagen...")
+    url = f"https://source.unsplash.com/1920x1080/?{tema}"
+    archivo = "media/imagen.jpg"
+    try:
+        respuesta = requests.get(url, stream=True, timeout=10)
+        if respuesta.status_code == 200:
+            with open(archivo, "wb") as f:
+                f.write(respuesta.content)
+            if not os.path.exists(archivo):
+                raise Exception("Imagen no guardada")
+            print(f"Imagen descargada: {archivo}")
+            return archivo
+        else:
+            raise Exception(f"Error al descargar, status: {respuesta.status_code}")
+    except Exception as e:
+        print(f"Error en imagen: {e}")
+        # Fallback: Imagen negra
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=60", "-c:v", "libx264", archivo],
+            capture_output=True, text=True
+        )
+        print(f"FFmpeg imagen fallback output: {result.stderr}")
+        return archivo
 
 # Paso 4: Obtener música
 def obtener_musica():
@@ -107,7 +104,7 @@ def obtener_musica():
                 f.write(respuesta.content)
             if not os.path.exists(archivo):
                 raise Exception("Música no guardada")
-            print("Música descargada: {archivo}")
+            print(f"Música descargada: {archivo}")
             return archivo
         else:
             raise Exception(f"Error al descargar música, status: {respuesta.status_code}")
@@ -129,7 +126,6 @@ def generar_subtitulos(audio, salida="media/subtitulos.srt"):
         with sr.AudioFile(audio) as source:
             audio_data = recognizer.record(source)
             texto = recognizer.recognize_whisper(audio_data, model="tiny")
-        
         # Subtítulos simplificados
         palabras = texto.split()
         subtitulos = []
@@ -145,7 +141,7 @@ def generar_subtitulos(audio, salida="media/subtitulos.srt"):
         pysrt.SubRipFile(subtitulos).save(salida)
         if not os.path.exists(salida):
             raise Exception("Subtítulos no generados")
-        print("Subtítulos generados: {salida}")
+        print(f"Subtítulos generados: {salida}")
         return salida
     except Exception as e:
         print(f"Error en subtítulos: {e}")
@@ -155,13 +151,12 @@ def generar_subtitulos(audio, salida="media/subtitulos.srt"):
         return salida
 
 # Paso 6: Crear video
-def crear_video(imagenes, voz, musica, subtitulos, salida="media/video_final.mp4"):
+def crear_video(imagen, voz, musica, subtitulos, salida="media/video_final.mp4"):
     print("Paso 6: Creando video...")
     try:
         # Verificar que los archivos de entrada existan
-        for img in imagenes:
-            if not os.path.exists(img):
-                raise Exception(f"Imagen no encontrada: {img}")
+        if not os.path.exists(imagen):
+            raise Exception(f"Imagen no encontrada: {imagen}")
         if not os.path.exists(voz):
             raise Exception("Archivo de voz no encontrado")
         if not os.path.exists(musica):
@@ -169,21 +164,12 @@ def crear_video(imagenes, voz, musica, subtitulos, salida="media/video_final.mp4
         if not os.path.exists(subtitulos):
             raise Exception("Archivo de subtítulos no encontrado")
 
-        # Crear archivo de entrada para imágenes
-        with open("media/imagenes.txt", "w") as f:
-            for img in imagenes:
-                f.write(f"file '{img}'\n")
-                f.write("duration 20\n")  # 20 segundos por imagen
-
-        # Combinar imágenes, voz, música y subtítulos
+        # Usar una imagen estática durante 60 segundos
         comando = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-            "-i", "media/imagenes.txt",
-            "-i", voz, "-i", musica,
-            "-vf", f"subtitles={subtitulos}",
+            "ffmpeg", "-y", "-loop", "1", "-i", imagen, "-i", voz, "-i", musica,
+            "-vf", f"subtitles={subtitulos},format=yuv420p",
             "-c:v", "libx264", "-c:a", "aac",
-            "-shortest", "-pix_fmt", "yuv420p",
-            salida
+            "-shortest", "-t", "60", salida
         ]
         result = subprocess.run(comando, check=True, capture_output=True, text=True)
         print(f"FFmpeg video output: {result.stderr}")
@@ -207,10 +193,10 @@ def main():
         tema = "nature"
         guion = generar_guion(tema)
         voz = texto_a_voz(guion)
-        imagenes = descargar_imagenes(tema)
+        imagen = descargar_imagen(tema)
         musica = obtener_musica()
         subtitulos = generar_subtitulos(voz)
-        video_final = crear_video(imagenes, voz, musica, subtitulos)
+        video_final = crear_video(imagen, voz, musica, subtitulos)
         print(f"Proceso completado: {video_final}")
     except Exception as e:
         print(f"Error en flujo principal: {e}")
