@@ -10,7 +10,7 @@ import pysrt
 os.makedirs("media", exist_ok=True)
 
 # Paso 1: Generar guión con Hugging Face Inference API
-def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("HF_TOKEN")):
+def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("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")):
     print("Paso 1: Generando guión...")
     try:
         if not hf_token:
