@@ -10,7 +10,7 @@ import pysrt
 os.makedirs("media", exist_ok=True)
 
 # Paso 1: Generar guión con Hugging Face Inference API
-def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("HF_TOKEN")):")):
+def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("HF_TOKEN")):
     try:
         url = "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1"
         headers = {"Authorization": f"Bearer {hf_token}"}
@@ -111,46 +111,4 @@ def generar_subtitulos(audio, salida="media/subtitulos.srt"):
         subtitulos = []
         for i in range(0, len(palabras), 5):
             start = i * 0.5
-            end = min((i + 5) * 0.5, 60)
-            subtitulos.append(pysrt.SubRipItem(
-                index=len(subtitulos) + 1,
-                start=pysrt.SubRipTime(seconds=start),
-                end=pysrt.SubRipTime(seconds=end),
-                text=" ".join(palabras[i:i+5])
-            ))
-        pysrt.SubRipFile(subtitulos).save(salida)
-        return salida
-    except Exception as e:
-        print(f"Error en subtítulos: {e}")
-        # Fallback: Subtítulos vacíos
-        with open(salida, "w") as f:
-            f.write("1\n00:00:00,000 --> 00:01:00,000\nSin subtítulos disponibles\n")
-        return salida
-
-# Paso 7: Agregar subtítulos
-def agregar_subtitulos(video, subtitulos, salida="media/video_final.mp4"):
-    try:
-        subprocess.run([
-            "ffmpeg", "-y", "-i", video, "-vf", f"subtitles={subtitulos}", "-c:v", "libx264", "-c:a", "copy", salida
-        ])
-        return salida
-    except Exception as e:
-        print(f"Error al agregar subtítulos: {e}")
-        # Fallback: Copiar video sin subtítulos
-        subprocess.run(["cp", video, salida])
-        return salida
-
-# Flujo principal
-def main():
-    tema = "nature"
-    guion = generar_guion(tema)
-    voz = texto_a_voz(guion)
-    imagenes = descargar_imagenes(tema)
-    musica = obtener_musica()
-    video = crear_video(imagenes, voz, musica)
-    subtitulos = generar_subtitulos(voz)
-    video_final = agregar_subtitulos(video, subtitulos)
-    print(f"Video generado: {video_final}")
-
-if __name__ == "__main__":
-    main()
+            end = min((i + 5) * 0
