@@ -3,14 +3,12 @@ import subprocess
 import requests
 import json
 from gtts import gTTS
-import speech_recognition as sr
-import pysrt
 
 # Crear directorio temporal
 os.makedirs("media", exist_ok=True)
 
 # Paso 1: Generar guión con Hugging Face Inference API
-def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("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")):
+def generar_guion(tema="curiosidades naturaleza", hf_token=os.getenv("HF_TOKEN")):
     print("Paso 1: Generando guión...")
     try:
         if not hf_token:
@@ -42,7 +40,11 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
         tts.save(temp_mp3)
         if not os.path.exists(temp_mp3):
             raise Exception("No se generó el archivo MP3")
-        subprocess.run(["ffmpeg", "-y", "-i", temp_mp3, archivo_salida], check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-i", temp_mp3, archivo_salida],
+            check=True, capture_output=True, text=True
+        )
+        print(f"FFmpeg voz output: {result.stderr}")
         if not os.path.exists(archivo_salida):
             raise Exception("No se generó el archivo WAV")
         print("Voz generada con éxito.")
@@ -50,7 +52,10 @@ def texto_a_voz(guion, archivo_salida="media/voz.wav"):
     except Exception as e:
         print(f"Error en voz: {e}")
         # Fallback: Silencio
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo_salida])
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo_salida],
+            capture_output=True, text=True
+        )
         return archivo_salida
 
 # Paso 3: Descargar imágenes (Unsplash Source)
@@ -74,7 +79,10 @@ def descargar_imagenes(tema="nature", cantidad=3):
         except Exception as e:
             print(f"Error en imagen {i}: {e}")
             # Fallback: Imagen negra
-            subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=20", "-c:v", "libx264", archivo])
+            subprocess.run(
+                ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=20", "-c:v", "libx264", archivo],
+                capture_output=True, text=True
+            )
             imagenes.append(archivo)
     return imagenes
 
@@ -97,5 +105,68 @@ def obtener_musica():
     except Exception as e:
         print(f"Error en música: {e}")
         # Fallback: Silencio
-        subprocess.run(["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo])
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100", "-t", "60", archivo],
+            capture_output=True, text=True
+        )
         return archivo
+
+# Paso 5: Crear video
+def crear_video(imagenes, voz, musica, salida="media/video_final.mp4"):
+    print("Paso 5: Creando video...")
+    try:
+        # Verificar que los archivos de entrada existan
+        for img in imagenes:
+            if not os.path.exists(img):
+                raise Exception(f"Imagen no encontrada: {img}")
+        if not os.path.exists(voz):
+            raise Exception("Archivo de voz no encontrado")
+        if not os.path.exists(musica):
+            raise Exception("Archivo de música no encontrado")
+
+        # Crear archivo de entrada para imágenes
+        with open("media/imagenes.txt", "w") as f:
+            for img in imagenes:
+                f.write(f"file '{img}'\n")
+                f.write("duration 20\n")  # 20 segundos por imagen
+
+        # Combinar imágenes, voz y música
+        comando = [
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", "media/imagenes.txt",
+            "-i", voz, "-i", musica,
+            "-c:v", "libx264", "-c:a", "aac",
+            "-shortest", "-pix_fmt", "yuv420p",
+            salida
+        ]
+        result = subprocess.run(comando, check=True, capture_output=True, text=True)
+        print(f"FFmpeg video output: {result.stderr}")
+        if not os.path.exists(salida):
+            raise Exception("Video final no generado")
+        print(f"Video final generado: {salida}")
+        return salida
+    except Exception as e:
+        print(f"Error en creación de video: {e}")
+        # Fallback: Video mínimo
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=1920x1080:d=60", "-c:v", "libx264", salida],
+            capture_output=True, text=True
+        )
+        return salida
+
+# Flujo principal
+def main():
+    try:
+        tema = "nature"
+        guion = generar_guion(tema)
+        voz = texto_a_voz(guion)
+        imagenes = descargar_imagenes(tema)
+        musica = obtener_musica()
+        video_final = crear_video(imagenes, voz, musica)
+        print(f"Proceso completado: {video_final}")
+    except Exception as e:
+        print(f"Error en flujo principal: {e}")
+        raise
+
+if __name__ == "__main__":
+    main()
