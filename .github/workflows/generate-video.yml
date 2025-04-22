@@ -9,9 +9,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Instalar FFmpeg
-      - name: Instalar FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # Instalar FFmpeg y dependencias
+      - name: Instalar FFmpeg y fuentes
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libass-dev fonts-dejavu-core fonts-ubuntu
 
       # Configurar Python
       - name: Configurar Python
@@ -19,12 +21,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      # Instalar dependencias
+      # Instalar dependencias de Python
       - name: Instalar dependencias
-        run: pip install gTTS google-generativeai openai-whisper requests
+        run: pip install gTTS google-generativeai openai-whisper requests jq
 
       # Descargar imagen (Unsplash o Pexels)
-      - name: Descargarimagen
+      - name: Descargar imagen
         run: |
           if [ $((RANDOM % 2)) -eq 0 ]; then
             curl -o imagen.jpg "https://source.unsplash.com/random/1920x1080/?nature"
@@ -46,26 +48,31 @@ jobs:
 
       # Descargar música
       - name: Descargar música
-        run: curl -o musica.mp3 "https://www.youtube.com/audiolibrary_download?vid=example" # Reemplaza con un enlace válido
+        run: curl -o musica.mp3 "https://www.youtube.com/audiolibrary_download?vid=example" # Reemplaza con enlace válido
 
       # Generar subtítulos
       - name: Generar subtítulos
         run: python generate_subtitles.py
 
+      # Verificar archivos
+      - name: Verificar archivos
+        run: ls -la imagen.jpg audio.mp3 musica.mp3 subtitulos.srt || echo "Falta algún archivo"
+
       # Generar video
       - name: Generar video
         run: |
-          ffmpeg -loop 1 -i imagen.jpg -i audio.mp3 -i musica.mp3 -vf "subtitles=subtitulos.srt:force_style='FontSize=24,PrimaryColour=&Hffffff&'" -c:v libx264 -c:a aac -filter_complex "[1:a][2:a]amix=inputs=2:duration=longest" -t 60 -pix_fmt yuv420p -shortest output.mp4 2> ffmpeg_error.log
-          cat ffmpeg_error.log # Mostrar errores
-        continue-on-error: true
+          ffmpeg -loop 1 -i imagen.jpg -i audio.mp3 -i musica.mp3 -vf "subtitles=subtitulos.srt:force_style='Fontsize=24,PrimaryColour=&Hffffff'" -c:v libx264 -c:a aac -filter_complex "[1:a][2:a]amix=inputs=2:duration=longest" -t 60 -pix_fmt yuv420p -shortest output.mp4 2> ffmpeg_error.log
+          cat ffmpeg_error.log
 
-      # Listar archivos para depuración
-      - name: Listar archivos
-        run: ls -la
-
-      # Subir video como artefacto
-      - name: Subir video
+      # Subir resultados
+      - name: Subir resultados
         uses: actions/upload-artifact@v4
         with:
-          name: video-generado
-          path: output.mp4
+          name: resultados
+          path: |
+            output.mp4
+            imagen.jpg
+            audio.mp3
+            musica.mp3
+            subtitulos.srt
+            ffmpeg_error.log
