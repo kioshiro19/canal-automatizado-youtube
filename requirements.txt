@@ -1,5 +1,1 @@
-requests==2.31.0
-gTTS==2.5.1
-speechrecognition==3.10.0
-pysrt==1.1.2
-pydub==0.25.1
+gTTS google-generativeai openai-whisper requests
