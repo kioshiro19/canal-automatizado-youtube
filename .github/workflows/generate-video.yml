@@ -13,7 +13,7 @@ jobs:
       - name: Instalar FFmpeg y fuentes
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libass-dev fonts-dejavu-core fonts-ubuntu
+          sudo apt-get install -y ffmpeg libass-dev fonts-dejavu-core fonts-ubuntu jq
 
       # Configurar Python
       - name: Configurar Python
@@ -23,15 +23,15 @@ jobs:
 
       # Instalar dependencias de Python
       - name: Instalar dependencias
-        run: pip install gTTS google-generativeai openai-whisper requests jq
+        run: pip install gTTS google-generativeai openai-whisper requests
 
       # Descargar imagen (Unsplash o Pexels)
       - name: Descargar imagen
         run: |
           if [ $((RANDOM % 2)) -eq 0 ]; then
-            curl -o imagen.jpg "https://source.unsplash.com/random/1920x1080/?nature"
+            curl -o imagen.jpg "https://source.unsplash.com/random/1920x1080/?nature" || echo "Error descargando de Unsplash"
           else
-            curl -H "Authorization: ${{ secrets.PEXELS_API_KEY }}" -o imagen.jpg "https://api.pexels.com/v1/search?query=nature&per_page=1" | jq -r '.photos[0].src.original'
+            curl -H "Authorization: ${{ secrets.PEXELS_API_KEY }}" -o imagen.jpg "https://api.pexels.com/v1/search?query=nature&per_page=1" | jq -r '.photos[0].src.original' || echo "Error descargando de Pexels"
           fi
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
@@ -48,7 +48,7 @@ jobs:
 
       # Descargar música
       - name: Descargar música
-        run: curl -o musica.mp3 "https://drive.google.com/file/d/1nc5PSy275sP35gS6iqoA0SDJ--TnUuqW/view?usp=sharing" # Reemplaza con enlace válido
+        run: curl -o musica.mp3 "https://www.youtube.com/audiolibrary_download?vid=example" || echo "Error descargando música" # Reemplaza con enlace válido
 
       # Generar subtítulos
       - name: Generar subtítulos
@@ -56,7 +56,9 @@ jobs:
 
       # Verificar archivos
       - name: Verificar archivos
-        run: ls -la imagen.jpg audio.mp3 musica.mp3 subtitulos.srt || echo "Falta algún archivo"
+        run: |
+          ls -la imagen.jpg audio.mp3 musica.mp3 subtitulos.srt || echo "Falta algún archivo"
+          file imagen.jpg audio.mp3 musica.mp3 subtitulos.srt || echo "Error en archivos"
 
       # Generar video
       - name: Generar video
