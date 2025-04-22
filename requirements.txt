@@ -2,4 +2,3 @@ gTTS
 google-generativeai
 openai-whisper
 requests
-jq
