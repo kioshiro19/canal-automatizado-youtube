@@ -48,7 +48,7 @@ jobs:
 
       # Descargar música
       - name: Descargar música
-        run: curl -o musica.mp3 "https://www.youtube.com/audiolibrary_download?vid=example" || echo "Error descargando música" # Reemplaza con enlace válido
+        run: curl -o musica.mp3 "https://drive.google.com/file/d/1nc5PSy275sP35gS6iqoA0SDJ--TnUuqW/view?usp=drive_link" || echo "Error descargando música" # Reemplaza con enlace válido
 
       # Generar subtítulos
       - name: Generar subtítulos
