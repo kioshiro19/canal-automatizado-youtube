@@ -1,1 +1,5 @@
-gTTS google-generativeai openai-whisper requests
+gTTS
+google-generativeai
+openai-whisper
+requests
+jq
