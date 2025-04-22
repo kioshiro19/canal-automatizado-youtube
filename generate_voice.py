@@ -5,5 +5,5 @@ with open("script.txt", "r") as f:
     texto = f.read()
 
 # Generar voz en off
-tts = gTTS(text=texto, lang='es', tld='com.mx') # Acento mexicano
+tts = gTTS(text=texto, lang='es', tld='com.mx')
 tts.save("audio.mp3")
